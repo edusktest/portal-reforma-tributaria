@@ -86,13 +86,26 @@
   .phase-btn.active.phase-depois{ background:var(--green-pale); border-color:var(--green); color:var(--green-deep); }
   .phase-btn:not(.active):hover{ border-color:var(--green-deep); }
 
+  .tab-note{
+    margin-top:18px; padding:16px 20px; border-radius:10px;
+    background:var(--green-pale); border-left:3px solid var(--green-deep);
+    color:var(--green-dark); font-size:14.5px; line-height:1.55;
+  }
+  .tab-note strong{ font-weight:700; }
+
   /* CAROUSEL CARD */
   .stage-card{
     margin-top:28px; background:#fff; border:1px solid var(--line-strong); border-radius:16px;
     overflow:hidden;
   }
-  .stage{ position:relative; width:100%; aspect-ratio:16/9; background:var(--bg-soft); }
-  .stage img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .stage{ position:relative; width:100%; aspect-ratio:16/9; background:var(--bg-soft); overflow:hidden; }
+  .stage-viewport{ position:absolute; inset:0; overflow:hidden; }
+  .stage-track{
+    display:flex; height:100%;
+    transition: transform .5s cubic-bezier(.4,0,.2,1);
+  }
+  .stage-slide{ position:relative; flex-shrink:0; height:100%; }
+  .stage-slide img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
   .stage-placeholder{
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:10px; text-align:center; padding:32px;
@@ -173,12 +186,13 @@
   <div class="wrap">
     <div class="page-head">
       <div class="pill"><span class="dot"></span>Portal da Reforma Tributária</div>
-      <h1>Como era, como vai ficar</h1>
-      <p>Configuração guiada e automação da emissão de nota de débito de multa e juros, passo a passo.</p>
+      <h1>Estamos preparando muitas novidades para automatizar a emissão de notas de débito e crédito</h1>
+      <p>Veja o que já estamos preparando para Nota de Débito de Multa e Juros.</p>
     </div>
 
     <div class="tabs" id="tabs"></div>
     <div class="phases" id="phases"></div>
+    <div class="tab-note" id="tabNote"></div>
 
     <div class="stage-card">
       <div class="stage" id="stage"></div>
@@ -208,6 +222,7 @@
     configuracao: {
       label: 'Configuração',
       title: 'Configuração de Nota de Débito',
+      note: 'Nosso assistente resolve em poucas etapas o que hoje é feito em <strong>3 telas diferentes</strong>, de forma manual.',
       phases: {
         antes: [
           { img: 'img/config-antes-1.png', desc: 'Criação manual do Tipo de Operação (TOP), campo a campo, direto na tela de cadastro.' },
@@ -226,6 +241,7 @@
     emissao: {
       label: 'Emissão',
       title: 'Emissão de Multa e Juros',
+      note: 'A automação faz o cálculo de rateio de multa e juros proporcional para cada item da nota, gera a nota com base no que foi configurado no assistente e fica pronta para transmissão no Portal de Vendas — manualmente ou via agendamento do próprio portal.',
       phases: {
         antes: [
           { img: 'img/emissao-antes-1.png', desc: 'No Portal de Vendas, localizar a nota de origem e iniciar manualmente a emissão da Nota de Débito.' },
@@ -246,6 +262,7 @@
 
   const tabsEl = document.getElementById('tabs');
   const phasesEl = document.getElementById('phases');
+  const tabNoteEl = document.getElementById('tabNote');
   const stageEl = document.getElementById('stage');
   const stageTitleEl = document.getElementById('stageTitle');
   const stageDescEl = document.getElementById('stageDesc');
@@ -270,29 +287,65 @@
     ).join('');
   }
 
+  function renderNote(){
+    tabNoteEl.innerHTML = CAROUSELS[currentTab].note || '';
+  }
+
+  // Reconstrói a trilha inteira (chamado ao trocar de aba ou de fase)
   function renderStage(){
     const group = CAROUSELS[currentTab];
     const list = group.phases[currentPhase];
-    const s = list[currentSlide];
+    const slideWidth = 100 / list.length;
 
     stageEl.innerHTML =
       '<div class="stage-tags"><span class="stage-tag">' + group.title + '</span><span class="stage-tag phase-' + currentPhase + '">' + PHASE_LABELS[currentPhase] + '</span></div>' +
-      '<div class="stage-counter">' + (currentSlide + 1) + '/' + list.length + '</div>' +
+      '<div class="stage-counter" id="stageCounter">' + (currentSlide + 1) + '/' + list.length + '</div>' +
       (list.length > 1
         ? '<button class="stage-arrow prev" onclick="prevSlide()" aria-label="Anterior" type="button">‹</button><button class="stage-arrow next" onclick="nextSlide()" aria-label="Próximo" type="button">›</button>'
-        : '');
+        : '') +
+      '<div class="stage-viewport"><div class="stage-track" id="stageTrack" style="width:' + (list.length * 100) + '%"></div></div>';
 
-    const img = document.createElement('img');
-    img.src = s.img;
-    img.alt = group.title + ' — ' + PHASE_LABELS[currentPhase];
-    img.onerror = function(){
-      img.remove();
-      const ph = document.createElement('div');
-      ph.className = 'stage-placeholder';
-      ph.innerHTML = '<div class="sp-icon">🖼️</div><p>Print em preparação</p><span>' + s.img + '</span>';
-      stageEl.appendChild(ph);
-    };
-    stageEl.insertBefore(img, stageEl.firstChild);
+    const track = document.getElementById('stageTrack');
+    list.forEach((s) => {
+      const slide = document.createElement('div');
+      slide.className = 'stage-slide';
+      slide.style.width = slideWidth + '%';
+
+      const img = document.createElement('img');
+      img.src = s.img;
+      img.alt = group.title + ' — ' + PHASE_LABELS[currentPhase];
+      img.onerror = function(){
+        img.remove();
+        const ph = document.createElement('div');
+        ph.className = 'stage-placeholder';
+        ph.innerHTML = '<div class="sp-icon">🖼️</div><p>Print em preparação</p><span>' + s.img + '</span>';
+        slide.appendChild(ph);
+      };
+      slide.appendChild(img);
+      track.appendChild(slide);
+    });
+
+    updateSlidePosition(false);
+  }
+
+  // Só desloca a trilha e atualiza textos/contador (chamado ao navegar dentro da mesma fase)
+  function updateSlidePosition(animate){
+    const group = CAROUSELS[currentTab];
+    const list = group.phases[currentPhase];
+    const s = list[currentSlide];
+    const track = document.getElementById('stageTrack');
+    const counter = document.getElementById('stageCounter');
+
+    if (track){
+      track.style.transition = animate === false ? 'none' : '';
+      track.style.transform = 'translateX(-' + (currentSlide * (100 / list.length)) + '%)';
+      if (animate === false){
+        // força reflow para o "none" ser aplicado antes de voltar a permitir transição
+        void track.offsetHeight;
+        track.style.transition = '';
+      }
+    }
+    if (counter) counter.textContent = (currentSlide + 1) + '/' + list.length;
 
     stageTitleEl.textContent = group.title + ' — ' + PHASE_LABELS[currentPhase];
     stageDescEl.textContent = s.desc || '';
@@ -306,11 +359,17 @@
     currentTab = key;
     currentPhase = 'antes';
     currentSlide = 0;
-    const url = new URL(window.location);
-    url.searchParams.set('aba', key);
-    window.history.replaceState({}, '', url);
+    try {
+      const url = new URL(window.location);
+      url.searchParams.set('aba', key);
+      window.history.replaceState({}, '', url);
+    } catch (e) {
+      // Alguns ambientes (ex: pré-visualização em iframe sandbox) bloqueiam
+      // a troca de URL. A navegação por abas continua funcionando normalmente.
+    }
     renderTabs();
     renderPhases();
+    renderNote();
     renderStage();
     restartAutoplay();
   }
@@ -326,22 +385,22 @@
   function nextSlide(){
     const n = CAROUSELS[currentTab].phases[currentPhase].length;
     currentSlide = (currentSlide + 1) % n;
-    renderStage();
+    updateSlidePosition(true);
   }
   function prevSlide(){
     const n = CAROUSELS[currentTab].phases[currentPhase].length;
     currentSlide = (currentSlide - 1 + n) % n;
-    renderStage();
+    updateSlidePosition(true);
   }
-  function goToSlide(i){ currentSlide = i; renderStage(); restartAutoplay(); }
+  function goToSlide(i){ currentSlide = i; updateSlidePosition(true); restartAutoplay(); }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') { nextSlide(); restartAutoplay(); }
     if (e.key === 'ArrowLeft') { prevSlide(); restartAutoplay(); }
   });
 
-  // ---- Autoplay: avança sozinho a cada 1s, pausa quando o mouse está em cima ----
-  const AUTOPLAY_MS = 1000;
+  // ---- Autoplay: avança sozinho a cada 2s, deslizando suavemente; pausa no hover ----
+  const AUTOPLAY_MS = 2000;
   let autoplayTimer = null;
 
   function startAutoplay(){
@@ -362,6 +421,7 @@
 
   renderTabs();
   renderPhases();
+  renderNote();
   renderStage();
   startAutoplay();
 </script>
