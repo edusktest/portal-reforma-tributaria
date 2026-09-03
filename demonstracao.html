@@ -103,6 +103,12 @@
   .stage-placeholder span{ color:var(--muted); font-size:13px; }
 
   .stage-tags{ position:absolute; top:16px; left:16px; z-index:2; display:flex; gap:8px; }
+  .stage-counter{
+    position:absolute; top:16px; right:16px; z-index:2;
+    padding:6px 12px; border-radius:100px; font-size:12.5px; font-weight:700;
+    background:rgba(18,33,26,0.55); color:#fff; font-family:'Manrope',sans-serif;
+    letter-spacing:0.02em;
+  }
   .stage-tag{
     padding:6px 13px; border-radius:100px; font-size:12.5px; font-weight:700;
     background:rgba(255,255,255,0.92); color:var(--ink-soft);
@@ -271,6 +277,7 @@
 
     stageEl.innerHTML =
       '<div class="stage-tags"><span class="stage-tag">' + group.title + '</span><span class="stage-tag phase-' + currentPhase + '">' + PHASE_LABELS[currentPhase] + '</span></div>' +
+      '<div class="stage-counter">' + (currentSlide + 1) + '/' + list.length + '</div>' +
       (list.length > 1
         ? '<button class="stage-arrow prev" onclick="prevSlide()" aria-label="Anterior" type="button">‹</button><button class="stage-arrow next" onclick="nextSlide()" aria-label="Próximo" type="button">›</button>'
         : '');
@@ -305,6 +312,7 @@
     renderTabs();
     renderPhases();
     renderStage();
+    restartAutoplay();
   }
 
   function switchPhase(phase){
@@ -312,6 +320,7 @@
     currentSlide = 0;
     renderPhases();
     renderStage();
+    restartAutoplay();
   }
 
   function nextSlide(){
@@ -324,16 +333,37 @@
     currentSlide = (currentSlide - 1 + n) % n;
     renderStage();
   }
-  function goToSlide(i){ currentSlide = i; renderStage(); }
+  function goToSlide(i){ currentSlide = i; renderStage(); restartAutoplay(); }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') nextSlide();
-    if (e.key === 'ArrowLeft') prevSlide();
+    if (e.key === 'ArrowRight') { nextSlide(); restartAutoplay(); }
+    if (e.key === 'ArrowLeft') { prevSlide(); restartAutoplay(); }
   });
+
+  // ---- Autoplay: avança sozinho a cada 1s, pausa quando o mouse está em cima ----
+  const AUTOPLAY_MS = 1000;
+  let autoplayTimer = null;
+
+  function startAutoplay(){
+    stopAutoplay();
+    autoplayTimer = setInterval(nextSlide, AUTOPLAY_MS);
+  }
+  function stopAutoplay(){
+    if (autoplayTimer) clearInterval(autoplayTimer);
+    autoplayTimer = null;
+  }
+  function restartAutoplay(){
+    startAutoplay();
+  }
+
+  const stageCardEl = document.querySelector('.stage-card');
+  stageCardEl.addEventListener('mouseenter', stopAutoplay);
+  stageCardEl.addEventListener('mouseleave', startAutoplay);
 
   renderTabs();
   renderPhases();
   renderStage();
+  startAutoplay();
 </script>
 
 </body>
