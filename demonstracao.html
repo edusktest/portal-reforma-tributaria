@@ -65,14 +65,22 @@
   .page-head p{ margin-top:12px; color:var(--ink-soft); font-size:15.5px; }
 
   /* TABS */
-  .tabs{ margin-top:36px; display:flex; gap:6px; border-bottom:1px solid var(--line-strong); }
-  .tab{
-    padding:12px 20px; border:none; background:transparent; cursor:pointer;
-    font-family:'Inter',sans-serif; font-size:15px; font-weight:600; color:var(--muted);
-    border-bottom:2px solid transparent; margin-bottom:-1px;
-    transition: color .15s ease, border-color .15s ease;
+  .tabs{
+    margin-top:36px; display:flex; gap:6px;
+    background:var(--bg-soft); border:1px solid var(--line-strong);
+    border-radius:14px; padding:6px;
   }
-  .tab.active{ color:var(--green-deep); border-color:var(--green-deep); }
+  .tab{
+    flex:1; padding:13px 20px; border-radius:10px; border:none; cursor:pointer;
+    font-family:'Manrope',sans-serif; font-size:15px; font-weight:700; color:var(--muted);
+    background:transparent; text-align:center;
+    transition: color .18s ease, background .18s ease, box-shadow .18s ease;
+  }
+  .tab.active{
+    color:var(--green-deep); background:#fff;
+    box-shadow:0 2px 8px rgba(18,33,26,0.12);
+  }
+  .tab:not(.active):hover{ color:var(--ink); background:rgba(255,255,255,0.55); }
 
   /* PHASE BUTTONS (Antes / Depois) */
   .phases{ margin-top:20px; display:flex; gap:10px; }
@@ -82,16 +90,15 @@
     border:1.5px solid var(--line-strong); background:#fff; color:var(--ink-soft);
     transition: all .15s ease;
   }
-  .phase-btn.active.phase-antes{ background:#FFF3D6; border-color:#e0be6b; color:#8a6a1f; }
-  .phase-btn.active.phase-depois{ background:var(--green-pale); border-color:var(--green); color:var(--green-deep); }
+  .phase-btn.active.phase-antes{ background:rgba(18,33,26,0.07); border-color:rgba(18,33,26,0.35); color:var(--ink); }
+  .phase-btn.active.phase-depois{ background:var(--green-pale); border-color:var(--green-deep); color:var(--green-deep); }
   .phase-btn:not(.active):hover{ border-color:var(--green-deep); }
 
   .tab-note{
-    margin-top:18px; padding:16px 20px; border-radius:10px;
-    background:var(--green-pale); border-left:3px solid var(--green-deep);
-    color:var(--green-dark); font-size:14.5px; line-height:1.55;
+    margin-top:16px;
+    color:var(--ink-soft); font-size:14.5px; line-height:1.6;
   }
-  .tab-note strong{ font-weight:700; }
+  .tab-note strong{ font-weight:700; color:var(--ink); }
 
   /* CAROUSEL CARD */
   .stage-card{
@@ -204,7 +211,7 @@
     </div>
 
     <div class="cta-row">
-      <a class="btn btn-primary" href="index.html#calculadora">Calcular minha economia</a>
+      <a class="btn btn-primary" href="index.html#calculadora">Tempo economizado</a>
       <a class="btn btn-ghost" href="index.html">Voltar para o início</a>
     </div>
   </div>
@@ -299,7 +306,6 @@
     const slideWidth = 100 / list.length;
 
     stageEl.innerHTML =
-      '<div class="stage-tags"><span class="stage-tag">' + group.title + '</span><span class="stage-tag phase-' + currentPhase + '">' + PHASE_LABELS[currentPhase] + '</span></div>' +
       '<div class="stage-counter" id="stageCounter">' + (currentSlide + 1) + '/' + list.length + '</div>' +
       (list.length > 1
         ? '<button class="stage-arrow prev" onclick="prevSlide()" aria-label="Anterior" type="button">‹</button><button class="stage-arrow next" onclick="nextSlide()" aria-label="Próximo" type="button">›</button>'
@@ -348,7 +354,7 @@
     }
     if (counter) counter.textContent = (currentSlide + 1) + '/' + list.length;
 
-    stageTitleEl.textContent = group.title + ' — ' + PHASE_LABELS[currentPhase];
+    stageTitleEl.textContent = group.title;
     stageDescEl.textContent = s.desc || '';
 
     stageDotsEl.innerHTML = list.map((_, i) =>
